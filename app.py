@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
-
+st.write("Secrets keys:", st.secrets.keys())
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
     page_title="Indian Mutual Fund Search",
@@ -14,15 +14,15 @@ st.write("Search Indian mutual funds using RapidAPI")
 
 # ---------------- USER INPUT ----------------
 fund_name = st.text_input(
-    "Enter Mutual Fund name (example: SBI, HDFC, ICICI)"
+    "Enter Stock name (example: SBI, HDFC, ICICI)"
 )
 
 # ---------------- BUTTON ACTION ----------------
-if st.button("Search Mutual Fund"):
+if st.button("Search Stock"):
 
     # 1️⃣ Input validation
     if not fund_name.strip():
-        st.warning("Please enter a mutual fund name")
+        st.warning("Please enter a Stock name")
 
     else:
         with st.spinner("Fetching data..."):
@@ -53,13 +53,13 @@ if st.button("Search Mutual Fund"):
                 # 🔹 CASE 1: API returns LIST
                 if isinstance(data, list) and len(data) > 0:
                     df = pd.DataFrame(data)
-                    st.success(f"Found {len(df)} mutual funds")
+                    st.success(f"Found {len(df)} stock")
                     st.dataframe(df, use_container_width=True)
 
                 # 🔹 CASE 2: API returns DICT with 'data' key
                 elif isinstance(data, dict) and "data" in data and len(data["data"]) > 0:
                     df = pd.DataFrame(data["data"])
-                    st.success(f"Found {len(df)} mutual funds")
+                    st.success(f"Found {len(df)} stock")
                     st.dataframe(df, use_container_width=True)
 
                 # 🔹 CASE 3: API returns single DICT
@@ -70,7 +70,7 @@ if st.button("Search Mutual Fund"):
 
                 # 🔹 CASE 4: Empty / unexpected
                 else:
-                    st.info("No mutual funds found for this search")
+                    st.info("No stocks found for this search")
 
             else:
                 st.error("API request failed")
