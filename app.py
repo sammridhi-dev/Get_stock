@@ -30,7 +30,7 @@ if st.button("Search Mutual Fund"):
             url = "https://indian-stock-exchange-api2.p.rapidapi.com/stock"
 
             params = {
-                "query": fund_name
+                "name": fund_name
             }
 
             headers = {
