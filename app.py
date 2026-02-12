@@ -30,12 +30,12 @@ if st.button("Search Mutual Fund"):
             url = "https://indian-stock-exchange-api2.p.rapidapi.com/mutual_fund_search"
 
             params = {
-                "query": companyName
+                "query": fund_name
             }
 
             headers = {
                 "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com",
-                "x-rapidapi-key": st.secrets["RAPID_API_KEY"]  # NEVER hardcode
+                "x-rapidapi-key": st.secrets["RAPID_API_KEY"]  
             }
 
             response = requests.get(url, headers=headers, params=params)
