@@ -4,13 +4,13 @@ import pandas as pd
 st.write("Secrets keys:", st.secrets.keys())
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Indian Mutual Fund Search",
+    page_title="Indian Stock Search",
     page_icon="📊",
     layout="centered"
 )
 
-st.title("📊 Indian Mutual Fund Search")
-st.write("Search Indian mutual funds using RapidAPI")
+st.title("📊 Indian Stock Search")
+st.write("Search Indian Stock using RapidAPI")
 
 # ---------------- USER INPUT ----------------
 fund_name = st.text_input(
