@@ -17,7 +17,7 @@ def get_stock_data(stock_name):
 
     stock_name = stock_name.upper().strip()
 
-    url = "https://indian-stock-exchange-api2.p.rapidapi.com/mutual_fund_search"
+    url = "https://indian-stock-exchange-api2.p.rapidapi.com/industry_search"
 
     querystring = {"Indices": "NIFTY 50", "Symbol": stock_name}
 
