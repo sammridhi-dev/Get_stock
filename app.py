@@ -1,91 +1,80 @@
-# app.py
-
-import streamlit as st
+import gradio as gr
 import requests
-import pandas as pd
+import os
+from dotenv import load_dotenv
 
-st.set_page_config(
-    page_title="Indian Stock Search",
-    page_icon="📊",
-    layout="centered"
-)
+# Load environment variables
+load_dotenv()
 
-st.title("📊 Indian Stock Search")
-st.write("Search Indian Stock (Backend Secured API)")
+RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 
-stock_name = st.text_input(
-    "Enter Stock name (example: SBI, HDFC, ICICI)"
-)
-
-if st.button("Search Stock"):
+def get_stock_data(stock_name):
 
     if not stock_name.strip():
-        st.warning("Please enter a stock name")
+        return "⚠ Please enter a stock name."
 
-    else:
-        with st.spinner("Fetching data..."):
+    url = "https://latest-stock-price.p.rapidapi.com/any"
 
-            backend_url = "http://127.0.0.1:8000/stock"
+    headers = {
+        "X-RapidAPI-Key": RAPID_API_KEY,
+        "X-RapidAPI-Host": "latest-stock-price.p.rapidapi.com"
+    }
 
-            response = requests.get(
-                backend_url,
-                params={"name": stock_name}
-            )
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+    except requests.exceptions.RequestException:
+        return "❌ Network error. Please try again."
 
-            if response.status_code == 200:
+    if response.status_code != 200:
+        return "❌ Failed to fetch stock data."
 
-                data = response.json()
+    data = response.json()
 
-                if not data:
-                    st.warning("No stock found.")
-                    st.stop()
+    # Filter stock
+    filtered = [
+        stock for stock in data
+        if stock_name.lower() in stock["symbol"].lower()
+    ]
 
-                # Convert to DataFrame
-                df = pd.DataFrame(data)
+    if not filtered:
+        return "⚠ No matching stock found."
 
-                # ✅ Keep only important columns (edit based on API response)
-                important_columns = [
-                    "symbol",
-                    "lastPrice",
-                    "open",
-                    "dayHigh",
-                    "dayLow"
-                ]
+    stock = filtered[0]
 
-                available_cols = [col for col in important_columns if col in df.columns]
-                df = df[available_cols]
+    # Clean formatted output
+    result = f"""
+📊 STOCK DETAILS
 
-                # ✅ Rename columns for clean display
-                df = df.rename(columns={
-                    "symbol": "Stock",
-                    "lastPrice": "Current Price",
-                    "open": "Open Price",
-                    "dayHigh": "Day High",
-                    "dayLow": "Day Low"
-                })
+🔹 Symbol: {stock.get('symbol', 'N/A')}
+🔹 Current Price: ₹ {stock.get('lastPrice', 'N/A')}
+🔹 Open Price: ₹ {stock.get('open', 'N/A')}
+🔹 Day High: ₹ {stock.get('dayHigh', 'N/A')}
+🔹 Day Low: ₹ {stock.get('dayLow', 'N/A')}
+🔹 Previous Close: ₹ {stock.get('previousClose', 'N/A')}
+    """
 
-                # ✅ Format numeric columns
-                for col in df.columns:
-                    if col != "Stock":
-                        df[col] = df[col].astype(float).round(2)
+    return result
 
-                st.success("Data fetched successfully ✅")
 
-                # ✅ Show top stock as metric
-                first_stock = df.iloc[0]
+# 🎨 Gradio UI
+with gr.Blocks(title="Indian Stock Search") as demo:
 
-                col1, col2, col3 = st.columns(3)
+    gr.Markdown("# 📊 Indian Stock Search")
+    gr.Markdown("Search Indian Stock (Secure API Integration)")
 
-                col1.metric("Stock", first_stock["Stock"])
-                col2.metric("Current Price", f"₹ {first_stock['Current Price']}")
-                col3.metric("Day High", f"₹ {first_stock['Day High']}")
+    stock_input = gr.Textbox(
+        label="Enter Stock Name (Example: SBI, HDFC, ICICI)"
+    )
 
-                st.divider()
+    output = gr.Markdown()
 
-                # ✅ Show clean table
-                st.subheader("Stock Details")
-                st.dataframe(df, use_container_width=True)
+    search_button = gr.Button("Search Stock")
 
-            else:
-                st.error("Backend request failed")
-                st.write(response.text)
+    search_button.click(
+        fn=get_stock_data,
+        inputs=stock_input,
+        outputs=output
+    )
+
+if __name__ == "__main__":
+    demo.launch()
