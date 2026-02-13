@@ -1,8 +1,9 @@
+# app.py
+
 import streamlit as st
 import requests
 import pandas as pd
-st.write("Secrets keys:", st.secrets.keys())
-# ---------------- PAGE CONFIG ----------------
+
 st.set_page_config(
     page_title="Indian Stock Search",
     page_icon="📊",
@@ -10,68 +11,81 @@ st.set_page_config(
 )
 
 st.title("📊 Indian Stock Search")
-st.write("Search Indian Stock using RapidAPI")
+st.write("Search Indian Stock (Backend Secured API)")
 
-# ---------------- USER INPUT ----------------
-fund_name = st.text_input(
+stock_name = st.text_input(
     "Enter Stock name (example: SBI, HDFC, ICICI)"
 )
 
-# ---------------- BUTTON ACTION ----------------
 if st.button("Search Stock"):
 
-    # 1️⃣ Input validation
-    if not fund_name.strip():
-        st.warning("Please enter a Stock name")
+    if not stock_name.strip():
+        st.warning("Please enter a stock name")
 
     else:
         with st.spinner("Fetching data..."):
 
-            url = "https://indian-stock-exchange-api2.p.rapidapi.com/stock"
+            backend_url = "http://127.0.0.1:8000/stock"
 
-            params = {
-                "name": fund_name
-            }
+            response = requests.get(
+                backend_url,
+                params={"name": stock_name}
+            )
 
-            headers = {
-                "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com",
-                "x-rapidapi-key": st.secrets["RAPID_API_KEY"]  
-            }
-
-            response = requests.get(url, headers=headers, params=params)
-
-            # ---------------- DEBUG VISIBILITY ----------------
-            st.write("Status Code:", response.status_code)
-
-            # ---------------- RESPONSE HANDLING ----------------
             if response.status_code == 200:
+
                 data = response.json()
 
-                st.write("Raw API Response 👇")
-                st.json(data)
+                if not data:
+                    st.warning("No stock found.")
+                    st.stop()
 
-                # 🔹 CASE 1: API returns LIST
-                if isinstance(data, list) and len(data) > 0:
-                    df = pd.DataFrame(data)
-                    st.success(f"Found {len(df)} stock")
-                    st.dataframe(df, use_container_width=True)
+                # Convert to DataFrame
+                df = pd.DataFrame(data)
 
-                # 🔹 CASE 2: API returns DICT with 'data' key
-                elif isinstance(data, dict) and "data" in data and len(data["data"]) > 0:
-                    df = pd.DataFrame(data["data"])
-                    st.success(f"Found {len(df)} stock")
-                    st.dataframe(df, use_container_width=True)
+                # ✅ Keep only important columns (edit based on API response)
+                important_columns = [
+                    "symbol",
+                    "lastPrice",
+                    "open",
+                    "dayHigh",
+                    "dayLow"
+                ]
 
-                # 🔹 CASE 3: API returns single DICT
-                elif isinstance(data, dict):
-                    df = pd.DataFrame([data])
-                    st.info("Single record returned")
-                    st.dataframe(df, use_container_width=True)
+                available_cols = [col for col in important_columns if col in df.columns]
+                df = df[available_cols]
 
-                # 🔹 CASE 4: Empty / unexpected
-                else:
-                    st.info("No stocks found for this search")
+                # ✅ Rename columns for clean display
+                df = df.rename(columns={
+                    "symbol": "Stock",
+                    "lastPrice": "Current Price",
+                    "open": "Open Price",
+                    "dayHigh": "Day High",
+                    "dayLow": "Day Low"
+                })
+
+                # ✅ Format numeric columns
+                for col in df.columns:
+                    if col != "Stock":
+                        df[col] = df[col].astype(float).round(2)
+
+                st.success("Data fetched successfully ✅")
+
+                # ✅ Show top stock as metric
+                first_stock = df.iloc[0]
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric("Stock", first_stock["Stock"])
+                col2.metric("Current Price", f"₹ {first_stock['Current Price']}")
+                col3.metric("Day High", f"₹ {first_stock['Day High']}")
+
+                st.divider()
+
+                # ✅ Show clean table
+                st.subheader("Stock Details")
+                st.dataframe(df, use_container_width=True)
 
             else:
-                st.error("API request failed")
+                st.error("Backend request failed")
                 st.write(response.text)
