@@ -7,55 +7,51 @@ load_dotenv()
 
 RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 
-def get_stock_data(stock_name):
+def get_stock_data(company_name):
 
     if not RAPID_API_KEY:
-        return "❌ API Key not found. Check your .env file."
+        return "❌ API Key not found in .env file"
 
-    if not stock_name.strip():
-        return "⚠ Please enter a stock symbol."
-
-    stock_name = stock_name.upper().strip()
+    if not company_name.strip():
+        return "⚠ Please enter company name"
 
     url = "https://indian-stock-exchange-api2.p.rapidapi.com/industry_search"
 
-    querystring = {"Indices": "NIFTY 50", "Symbol": stock_name}
-
     headers = {
-        "X-RapidAPI-Key": RAPID_API_KEY,
-        "X-RapidAPI-Host": "indian-stock-exchange-api2.p.rapidapi.com"
+        "x-rapidapi-key": RAPID_API_KEY,
+        "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com"
+    }
+
+    params = {
+        "name": company_name
     }
 
     try:
-        response = requests.get(
-            url,
-            headers=headers,
-            params=querystring,
-            timeout=10
-        )
+        response = requests.get(url, headers=headers, params=params, timeout=10)
     except requests.exceptions.RequestException as e:
-        return f"❌ Network error: {str(e)}"
+        return f"❌ Network Error: {str(e)}"
 
     if response.status_code != 200:
         return f"❌ API Error {response.status_code}: {response.text}"
 
     data = response.json()
 
+    if not isinstance(data, list):
+        return f"❌ Unexpected response: {data}"
+
     if not data:
-        return "⚠ No data found for this stock."
+        return "⚠ No results found"
 
-    stock = data[0]
+    result = "## 🔎 Search Results\n\n"
 
-    result = f"""
-## 📊 STOCK DETAILS
-
+    for stock in data:
+        result += f"""
+🔹 **Company:** {stock.get('companyName', 'N/A')}  
 🔹 **Symbol:** {stock.get('symbol', 'N/A')}  
-🔹 **Current Price:** ₹ {stock.get('lastPrice', 'N/A')}  
-🔹 **Open Price:** ₹ {stock.get('open', 'N/A')}  
-🔹 **Day High:** ₹ {stock.get('dayHigh', 'N/A')}  
-🔹 **Day Low:** ₹ {stock.get('dayLow', 'N/A')}  
-🔹 **Previous Close:** ₹ {stock.get('previousClose', 'N/A')}  
-    """
+🔹 **Industry:** {stock.get('industry', 'N/A')}  
+
+---
+"""
 
     return result
 
@@ -63,16 +59,16 @@ def get_stock_data(stock_name):
 with gr.Blocks(title="Indian Stock Search") as demo:
 
     gr.Markdown("# 📊 Indian Stock Search")
-    gr.Markdown("Search Indian Stock (Enter NSE Symbol like SBIN, HDFCBANK, TATASTEEL)")
+    gr.Markdown("Search by company name (Example: tata steel)")
 
-    stock_input = gr.Textbox(label="Enter Stock Symbol")
+    input_box = gr.Textbox(label="Company Name")
     output = gr.Markdown()
 
-    search_button = gr.Button("Search Stock")
+    btn = gr.Button("Search")
 
-    search_button.click(
+    btn.click(
         fn=get_stock_data,
-        inputs=stock_input,
+        inputs=input_box,
         outputs=output
     )
 
