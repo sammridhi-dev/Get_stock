@@ -7,6 +7,7 @@ load_dotenv()
 
 RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 
+
 def get_stock_data(company_name):
 
     if not RAPID_API_KEY:
@@ -22,17 +23,16 @@ def get_stock_data(company_name):
         "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com"
     }
 
+    # ✅ FIXED PARAM NAME
     params = {
-        "name": company_name
+        "query": company_name   # ✔ API expects 'query'
     }
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        return f"❌ Network Error: {str(e)}"
-
-    if response.status_code != 200:
-        return f"❌ API Error {response.status_code}: {response.text}"
+        return f"❌ Network/API Error: {str(e)}"
 
     data = response.json()
 
@@ -73,4 +73,4 @@ with gr.Blocks(title="Indian Stock Search") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch()
