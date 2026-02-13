@@ -3,8 +3,8 @@ import requests
 import os
 from dotenv import load_dotenv
 
+# Load .env file
 load_dotenv()
-
 RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 
 
@@ -14,18 +14,18 @@ def get_stock_data(company_name):
         return "❌ API Key not found in .env file"
 
     if not company_name.strip():
-        return "⚠ Please enter company name"
+        return "⚠ Please enter a company name"
 
-    url = "https://indian-stock-exchange-api2.p.rapidapi.com/industry_search"
+    url = "https://indian-stock-exchange-api2.p.rapidapi.com/stock"
 
     headers = {
         "x-rapidapi-key": RAPID_API_KEY,
         "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com"
     }
 
-    # ✅ FIXED PARAM NAME
+    # ✅ Updated parameter as per curl
     params = {
-        "query": company_name   # ✔ API expects 'query'
+        "name": company_name
     }
 
     try:
@@ -36,34 +36,52 @@ def get_stock_data(company_name):
 
     data = response.json()
 
-    if not isinstance(data, list):
-        return f"❌ Unexpected response: {data}"
-
     if not data:
         return "⚠ No results found"
 
-    result = "## 🔎 Search Results\n\n"
+    # If API returns dictionary
+    if isinstance(data, dict):
 
-    for stock in data:
-        result += f"""
-🔹 **Company:** {stock.get('companyName', 'N/A')}  
-🔹 **Symbol:** {stock.get('symbol', 'N/A')}  
-🔹 **Industry:** {stock.get('industry', 'N/A')}  
+        result = f"""
+## 📊 Stock Details
+
+🔹 **Company:** {data.get('companyName', 'N/A')}  
+🔹 **Symbol:** {data.get('symbol', 'N/A')}  
+🔹 **Industry:** {data.get('industry', 'N/A')}  
+🔹 **Current Price:** {data.get('currentPrice', 'N/A')}  
+🔹 **Market Cap:** {data.get('marketCap', 'N/A')}  
 
 ---
 """
+        return result
 
-    return result
+    # If API returns list
+    elif isinstance(data, list):
+
+        result = "## 📊 Stock Results\n\n"
+
+        for stock in data:
+            result += f"""
+🔹 **Company:** {stock.get('companyName', 'N/A')}  
+🔹 **Symbol:** {stock.get('symbol', 'N/A')}  
+🔹 **Industry:** {stock.get('industry', 'N/A')}  
+🔹 **Current Price:** {stock.get('currentPrice', 'N/A')}  
+
+---
+"""
+        return result
+
+    else:
+        return f"❌ Unexpected response format: {data}"
 
 
 with gr.Blocks(title="Indian Stock Search") as demo:
 
-    gr.Markdown("# 📊 Indian Stock Search")
+    gr.Markdown("# 📈 Indian Stock Lookup")
     gr.Markdown("Search by company name (Example: tata steel)")
 
     input_box = gr.Textbox(label="Company Name")
     output = gr.Markdown()
-
     btn = gr.Button("Search")
 
     btn.click(
@@ -73,4 +91,4 @@ with gr.Blocks(title="Indian Stock Search") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
