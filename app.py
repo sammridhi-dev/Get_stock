@@ -3,69 +3,69 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 
 def get_stock_data(stock_name):
 
-    if not stock_name.strip():
-        return "⚠ Please enter a stock name."
+    if not RAPID_API_KEY:
+        return "❌ API Key not found. Check your .env file."
 
-    url = "https://latest-stock-price.p.rapidapi.com/any"
+    if not stock_name.strip():
+        return "⚠ Please enter a stock symbol."
+
+    stock_name = stock_name.upper().strip()
+
+    url = "https://indian-stock-exchange-api2.p.rapidapi.com/mutual_fund_search"
+
+    querystring = {"Indices": "NIFTY 50", "Symbol": stock_name}
 
     headers = {
         "X-RapidAPI-Key": RAPID_API_KEY,
-        "X-RapidAPI-Host": "latest-stock-price.p.rapidapi.com"
+        "X-RapidAPI-Host": "indian-stock-exchange-api2.p.rapidapi.com"
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-    except requests.exceptions.RequestException:
-        return "❌ Network error. Please try again."
+        response = requests.get(
+            url,
+            headers=headers,
+            params=querystring,
+            timeout=10
+        )
+    except requests.exceptions.RequestException as e:
+        return f"❌ Network error: {str(e)}"
 
     if response.status_code != 200:
-        return "❌ Failed to fetch stock data."
+        return f"❌ API Error {response.status_code}: {response.text}"
 
     data = response.json()
 
-    # Filter stock
-    filtered = [
-        stock for stock in data
-        if stock_name.lower() in stock["symbol"].lower()
-    ]
+    if not data:
+        return "⚠ No data found for this stock."
 
-    if not filtered:
-        return "⚠ No matching stock found."
+    stock = data[0]
 
-    stock = filtered[0]
-
-    # Clean formatted output
     result = f"""
-📊 STOCK DETAILS
+## 📊 STOCK DETAILS
 
-🔹 Symbol: {stock.get('symbol', 'N/A')}
-🔹 Current Price: ₹ {stock.get('lastPrice', 'N/A')}
-🔹 Open Price: ₹ {stock.get('open', 'N/A')}
-🔹 Day High: ₹ {stock.get('dayHigh', 'N/A')}
-🔹 Day Low: ₹ {stock.get('dayLow', 'N/A')}
-🔹 Previous Close: ₹ {stock.get('previousClose', 'N/A')}
+🔹 **Symbol:** {stock.get('symbol', 'N/A')}  
+🔹 **Current Price:** ₹ {stock.get('lastPrice', 'N/A')}  
+🔹 **Open Price:** ₹ {stock.get('open', 'N/A')}  
+🔹 **Day High:** ₹ {stock.get('dayHigh', 'N/A')}  
+🔹 **Day Low:** ₹ {stock.get('dayLow', 'N/A')}  
+🔹 **Previous Close:** ₹ {stock.get('previousClose', 'N/A')}  
     """
 
     return result
 
 
-# 🎨 Gradio UI
 with gr.Blocks(title="Indian Stock Search") as demo:
 
     gr.Markdown("# 📊 Indian Stock Search")
-    gr.Markdown("Search Indian Stock (Secure API Integration)")
+    gr.Markdown("Search Indian Stock (Enter NSE Symbol like SBIN, HDFCBANK, TATASTEEL)")
 
-    stock_input = gr.Textbox(
-        label="Enter Stock Name (Example: SBI, HDFC, ICICI)"
-    )
-
+    stock_input = gr.Textbox(label="Enter Stock Symbol")
     output = gr.Markdown()
 
     search_button = gr.Button("Search Stock")
