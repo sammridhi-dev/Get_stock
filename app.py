@@ -62,8 +62,7 @@ def get_stock_data(company_name):
 
         for stock in data:
             result += f"""
-🔹 **Company:** {stock.get('companyName', 'N/A')}  
-🔹 **Symbol:** {stock.get('symbol', 'N/A')}  
+🔹 **Company:** {stock.get('companyName', 'N/A')}   
 🔹 **Industry:** {stock.get('industry', 'N/A')}  
 🔹 **Current Price:** {stock.get('currentPrice', 'N/A')}  
 
@@ -91,4 +90,4 @@ with gr.Blocks(title="Indian Stock Search") as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch(server_name="0.0.0.0", server_port=7860)
