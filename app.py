@@ -23,7 +23,6 @@ def get_stock_data(company_name):
         "x-rapidapi-host": "indian-stock-exchange-api2.p.rapidapi.com"
     }
 
-    # ✅ Updated parameter as per curl
     params = {
         "name": company_name
     }
@@ -39,8 +38,12 @@ def get_stock_data(company_name):
     if not data:
         return "⚠ No results found"
 
-    # If API returns dictionary
+    # ✅ If API returns dictionary
     if isinstance(data, dict):
+
+        # Safe extraction for nested values
+        risk = data.get("riskMeter", {})
+        company_profile = data.get("companyProfile", {})
 
         result = f"""
 ## 📊 Stock Details
@@ -52,17 +55,51 @@ def get_stock_data(company_name):
 🔹 **Market Cap:** {data.get('marketCap', 'N/A')}  
 
 ---
+
+## 📈 Performance Metrics  
+
+🔹 **1 Day % Change:** {data.get('percentChange', 'N/A')}  
+🔹 **52 Week High:** {data.get('yearHigh', 'N/A')}  
+🔹 **52 Week Low:** {data.get('yearLow', 'N/A')}  
+
+---
+
+## ⚠️ Risk Analysis  
+
+🔹 **Risk Category:** {risk.get('categoryName', 'N/A')}  
+🔹 **Volatility (Std Dev):** {risk.get('stdDev', 'N/A')}  
+
+---
+
+## 📅 Futures & Derivatives  
+
+🔹 **Future Expiry Dates:** {data.get('futureExpiryDates') or "Not Available"}  
+🔹 **Future Overview:** {data.get('futureOverviewData') or "Not Available"}  
+
+---
+
+## 💰 Financial Snapshot  
+
+🔹 **Initial Financial Data:** {data.get('initialStockFinancialData') or "Not Available"}  
+
+---
+
+## 🏢 Company Overview  
+
+{company_profile.get('companyDescription', 'N/A')}
+
+---
 """
         return result
 
-    # If API returns list
+    # ✅ If API returns list
     elif isinstance(data, list):
 
         result = "## 📊 Stock Results\n\n"
 
         for stock in data:
             result += f"""
-🔹 **Company:** {stock.get('companyName', 'N/A')}   
+🔹 **Company:** {stock.get('companyName', 'N/A')}  
 🔹 **Industry:** {stock.get('industry', 'N/A')}  
 🔹 **Current Price:** {stock.get('currentPrice', 'N/A')}  
 
@@ -77,7 +114,7 @@ def get_stock_data(company_name):
 with gr.Blocks(title="Indian Stock Search") as demo:
 
     gr.Markdown("# 📈 Indian Stock Lookup")
-    gr.Markdown("Search by company name (Example: tata steel)")
+    gr.Markdown("Search by company name (Example: Tata Steel)")
 
     input_box = gr.Textbox(label="Company Name")
     output = gr.Markdown()
